@@ -1,0 +1,11 @@
+{
+	"folders": [
+		{
+			"path": "."
+		},
+		{
+			"path": "~/anaconda3/envs/rl_gym"
+		}
+	],
+	"settings": {}
+}
