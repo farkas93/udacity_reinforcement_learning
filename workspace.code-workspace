@@ -4,7 +4,10 @@
 			"path": "."
 		},
 		{
-			"path": "~/anaconda3/envs/rl_gym"
+			"path": "~/anaconda3/envs/py_3_6_rl_gym"
+		},
+		{
+			"path": "C:/Users/Zsombor Kalotay/anaconda3/envs/drlnd"
 		}
 	],
 	"settings": {}
