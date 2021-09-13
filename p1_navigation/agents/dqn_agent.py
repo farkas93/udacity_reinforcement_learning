@@ -1,12 +1,14 @@
+
 import numpy as np
 import random
 from collections import namedtuple, deque
 
-from model import QNetwork
+from models.linear_model import MaxPoolQNetwork
 
 import torch
 import torch.nn.functional as F
 import torch.optim as optim
+from torchsummary import summary
 
 BUFFER_SIZE = int(1e5)  # replay buffer size
 BATCH_SIZE = 64         # minibatch size
@@ -14,10 +16,12 @@ GAMMA = 0.99            # discount factor
 TAU = 1e-3              # for soft update of target parameters
 LR = 5e-4               # learning rate 
 UPDATE_EVERY = 4        # how often to update the network
+EPOCH_SIZE = 100        # how many episodes are an epoch
+EARLY_OUT = 3           # Number of epochs we allow to have stagnation in learning before early out.
 
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
-class Agent():
+class DQNAgent():
     """Interacts with and learns from the environment."""
 
     def __init__(self, state_size, action_size, seed):
@@ -34,9 +38,10 @@ class Agent():
         self.seed = random.seed(seed)
 
         # Q-Network
-        self.qnetwork_local = QNetwork(state_size, action_size, seed).to(device)
-        self.qnetwork_target = QNetwork(state_size, action_size, seed).to(device)
+        self.qnetwork_local = MaxPoolQNetwork(state_size, action_size, seed).to(device)
+        self.qnetwork_target = MaxPoolQNetwork(state_size, action_size, seed).to(device)
         self.optimizer = optim.Adam(self.qnetwork_local.parameters(), lr=LR)
+        summary(self.qnetwork_local, (state_size,))
 
         # Replay memory
         self.memory = ReplayBuffer(action_size, BUFFER_SIZE, BATCH_SIZE, seed)
@@ -115,6 +120,62 @@ class Agent():
         """
         for target_param, local_param in zip(target_model.parameters(), local_model.parameters()):
             target_param.data.copy_(tau*local_param.data + (1.0-tau)*target_param.data)
+
+    def train(self, env, brain_name, n_episodes=1800, max_t=1000, eps_start=1.0, eps_end=0.01, eps_decay=0.995):
+        """Deep Q-Learning.
+        
+        Params
+        ======
+            n_episodes (int): maximum number of training episodes
+            max_t (int): maximum number of timesteps per episode
+            eps_start (float): starting value of epsilon, for epsilon-greedy action selection
+            eps_end (float): minimum value of epsilon
+            eps_decay (float): multiplicative factor (per episode) for decreasing epsilon
+        """
+        scores = []                        # list containing scores from each episode
+        scores_window = deque(maxlen=100)  # last 100 scores
+        eps = eps_start                    # initialize epsilon
+        best_score_avg = 0
+        stagnation_cnt = 0
+        for i_episode in range(1, n_episodes+1):
+            env_info = env.reset(train_mode=True)[brain_name] # reset the environment
+            state = env_info.vector_observations[0]            # get the current state
+            score = 0
+            for t in range(max_t):
+                action = int(self.act(state, eps))
+
+                env_info = env.step(action)[brain_name]        # send the action to the environment
+                
+                next_state = env_info.vector_observations[0]   # get the next state
+                reward = env_info.rewards[0]                   # get the reward
+                done = env_info.local_done[0]                  # see if episode has finished
+                
+                self.step(state, action, reward, next_state, done)
+                state = next_state
+                score += reward
+                if done:
+                    break 
+            scores_window.append(score)       # save most recent score
+            scores.append(score)              # save most recent score
+            eps = max(eps_end, eps_decay*eps) # decrease epsilon
+            scores_window_avg = np.mean(scores_window)
+            print('\rEpisode {}\tAverage Score: {:.2f}'.format(i_episode, scores_window_avg), end="")
+            if i_episode % EPOCH_SIZE == 0:
+                print('\rEpisode {}\tAverage Score: {:.2f}'.format(i_episode, scores_window_avg))
+                if best_score_avg < scores_window_avg:
+                    best_score_avg = scores_window_avg
+                    stagnation_cnt = 0
+                    print('Improvements on solving the environment in {:d} episodes!\t Created new checkpoint'.format(i_episode))
+                    torch.save(self.qnetwork_local.state_dict(), 'checkpoint.pth')
+                else:
+                    stagnation_cnt += 1
+            if stagnation_cnt >= EARLY_OUT:
+                print("Early Out: Training ended due to {} stagnating epochs".format(EARLY_OUT))
+                break
+            
+        print('\nTraining completed in {:d} episodes!\tAverage Score: {:.2f}'.format(i_episode-EPOCH_SIZE, np.mean(scores_window)))
+        torch.save(self.qnetwork_local.state_dict(), 'checkpoint.pth')
+        return scores
 
 
 class ReplayBuffer:

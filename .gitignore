@@ -103,3 +103,6 @@ ENV/
 # mypy
 .mypy_cache/
 p1_navigation/Banana_Windows_x86_64/
+p1_navigation/Banana/
+p1_navigation/checkpoint.pth
+p1_navigation_linear_dqn.zip
