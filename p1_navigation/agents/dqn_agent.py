@@ -3,7 +3,7 @@ import numpy as np
 import random
 from collections import namedtuple, deque
 
-from models.linear_model import MaxPoolQNetwork
+from models.linear_model import DropoutQNetwork, DuelingQNetwork, QNetwork
 
 import torch
 import torch.nn.functional as F
@@ -38,8 +38,8 @@ class DQNAgent():
         self.seed = random.seed(seed)
 
         # Q-Network
-        self.qnetwork_local = MaxPoolQNetwork(state_size, action_size, seed).to(device)
-        self.qnetwork_target = MaxPoolQNetwork(state_size, action_size, seed).to(device)
+        self.qnetwork_local = DuelingQNetwork(state_size, action_size, seed).to(device)
+        self.qnetwork_target = DuelingQNetwork(state_size, action_size, seed).to(device)
         self.optimizer = optim.Adam(self.qnetwork_local.parameters(), lr=LR)
         summary(self.qnetwork_local, (state_size,))
 
@@ -121,7 +121,7 @@ class DQNAgent():
         for target_param, local_param in zip(target_model.parameters(), local_model.parameters()):
             target_param.data.copy_(tau*local_param.data + (1.0-tau)*target_param.data)
 
-    def train(self, env, brain_name, n_episodes=1800, max_t=1000, eps_start=1.0, eps_end=0.01, eps_decay=0.995):
+    def train(self, env, brain_name, n_episodes=1600, max_t=1000, eps_start=1.0, eps_end=0.01, eps_decay=0.995):
         """Deep Q-Learning.
         
         Params
@@ -170,7 +170,8 @@ class DQNAgent():
                 else:
                     stagnation_cnt += 1
             if stagnation_cnt >= EARLY_OUT:
-                print("Early Out: Training ended due to {} stagnating epochs".format(EARLY_OUT))
+                print("Early Out: Training ended due to {} stagnating epochs. Resetting weights to the last checkpoint.".format(EARLY_OUT))
+                self.qnetwork_local.load_state_dict(torch.load('checkpoint.pth'))
                 break
             
         print('\nTraining completed in {:d} episodes!\tAverage Score: {:.2f}'.format(i_episode-EPOCH_SIZE, np.mean(scores_window)))
