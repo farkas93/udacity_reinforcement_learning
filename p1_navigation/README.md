@@ -44,6 +44,8 @@ There are multiple ways to run it. You can either use the jupyter notebook file 
 - `main_train.py` - For training the Deep-QNet.
 - `main_test.py` - For testing the Deep-QNet over 100 episodes.
 
+The notebook `Navigation.ipynb` should be self explaining. Nonetheless I recommend using `main_train.py` and `main_test.py`, since I have abandoned `Navigation.ipynb` at some point and therefore the results might differ!
+
 Note that you can pass for both `main_train.py` and `main_test.py` a model name (string) as an argument. The passed model name will be used to create at the end of the training an export pth-file of the agents weights into the folder `saved_models`.
 In `main_train.py` it will train a dueling DQNet model for 1600 episodes. Parameters can be changed or set in `dqn_agent.py`.
 The agent saves in the `p1_navigation` folder the current weights in a file called `checkpoint.pth` after every epoch (100 episodes per default), iff the model has achieved a better average score than in the best scoring epoch up until then. 
