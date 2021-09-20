@@ -8,7 +8,7 @@
 
 For this project, I have trained an agent to navigate (and collect bananas!) in a large, square world.  
 
-![Trained Agent][image1]
+For watching my agent solving the problem watch the mp4 file called banana_collecting_avg15_76.mp4 which is in this project folder.
 
 A reward of +1 is provided for collecting a yellow banana, and a reward of -1 is provided for collecting a blue banana.  Thus, the goal of my agent is to collect as many yellow bananas as possible while avoiding blue bananas.  
 

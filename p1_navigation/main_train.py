@@ -4,7 +4,22 @@ import torch
 import matplotlib.pyplot as plt
 from agents.dqn_agent import DQNAgent
 import sys
+import pandas as pd
 
+
+def plot_scores(scores, rolling_window=100):
+    """Plot scores and optional rolling mean using specified window."""
+    plt.title("Scores")
+    rolling_mean = pd.Series(scores).rolling(rolling_window).mean()    
+    # plot the scores
+    fig = plt.figure()
+    ax = fig.add_subplot(111)
+    plt.plot(np.arange(len(scores)), scores)
+    plt.plot(rolling_mean)
+    plt.ylabel('Score')
+    plt.xlabel('Episode #')
+    plt.show()
+    pass
 
 def main():    
     args = sys.argv[1:]
@@ -44,13 +59,6 @@ def main():
     #Save the trained model
     torch.save(agent.qnetwork_local.state_dict(), './saved_models/'+ model_name +'.pth')
 
-    # plot the scores
-    fig = plt.figure()
-    ax = fig.add_subplot(111)
-    plt.plot(np.arange(len(scores)), scores)
-    plt.ylabel('Score')
-    plt.xlabel('Episode #')
-    plt.show()
 
 if __name__ == "__main__":
     main()

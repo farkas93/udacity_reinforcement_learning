@@ -30,7 +30,7 @@ def main():
     scores = []
     episode_cnt = 0
     while episode_cnt < 100:
-        env_info = env.reset(train_mode=True)[brain_name] # reset the environment
+        env_info = env.reset(train_mode=False)[brain_name] # reset the environment
         state = env_info.vector_observations[0]            # get the current state
         score = 0                                          # initialize the score
         while True:
@@ -41,9 +41,9 @@ def main():
             done = env_info.local_done[0]                  # see if episode has finished
             score += reward                                # update the score
             state = next_state                             # roll over the state to next time step
+            print('\rEpisode {}\t Current Score: {:.2f}'.format(episode_cnt, score), end="")
             if done:                                       # exit loop if episode finished
                 scores.append(score)
-                print('\rEpisode {}\tAverage Score: {:.2f}'.format(episode_cnt, np.mean(scores)), end="")
                 break
         #if score < 13:
         #    print("\rAgent failed the test! Score: {}".format(score))
