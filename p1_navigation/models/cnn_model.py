@@ -41,11 +41,11 @@ class QNetwork(nn.Module):
         x = self.conv3(x)
         x = self.conv4(x)
         x = self.conv5(x)
-        x = torch.flatten(x)
+        x = torch.flatten(x, start_dim = 1)
         x = F.relu(self.fc1(x))
         x = F.relu(self.fc2(x))
         x = F.relu(self.fc3(x))
-        return self.fc4(x)
+        return F.softmax(self.fc4(x))
 
 
 class DuelingQNetwork(nn.Module):
@@ -78,4 +78,4 @@ class DuelingQNetwork(nn.Module):
         x_1 = F.relu(self.action_advantages(x_1))
         x_2 = F.relu(self.state_value(x_2))
         x = torch.cat([x_1, x_2], dim=1)
-        return self.out_layer(x)        
+        return F.softmax(self.out_layer(x))        
