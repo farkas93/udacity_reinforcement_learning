@@ -9,17 +9,18 @@ import torch
 import torch.nn.functional as F
 import torch.optim as optim
 
-BUFFER_SIZE = int(1e5)  # replay buffer size
+BUFFER_SIZE = int(1e6)  # replay buffer size
 BATCH_SIZE = 128        # minibatch size
 GAMMA = 0.99            # discount factor
 TAU = 1e-3              # for soft update of target parameters
-LR_ACTOR = 1e-4         # learning rate of the actor 
+LR_ACTOR = 1e-3        # learning rate of the actor 
 LR_CRITIC = 1e-3        # learning rate of the critic
 WEIGHT_DECAY = 0        # L2 weight decay
+GRAD_CLIP_THRESHOLD = 0.9
 
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
-class Agent():
+class AgentCollective():
     """Interacts with and learns from the environment."""
     
     def __init__(self, state_size, action_size, random_seed):
@@ -56,6 +57,7 @@ class Agent():
 
         for i in range(len(states)):
             # Save experience / reward
+            #print("States: {} \nActions: {} \nRewards: {} \nNext States: {} \nDones: {}".format(states[i], actions[i], rewards[i], next_states[i], dones[i]))
             self.memory.add(states[i], actions[i], rewards[i], next_states[i], dones[i])
 
         # Learn, if enough samples are available in memory
@@ -105,7 +107,10 @@ class Agent():
         critic_loss = F.mse_loss(Q_expected, Q_targets)
         # Minimize the loss
         self.critic_optimizer.zero_grad()
-        critic_loss.backward()
+        critic_loss.backward()        
+        # gradient clipping for critic
+        if GRAD_CLIP_THRESHOLD > 0:
+            torch.nn.utils.clip_grad_norm_(self.critic_local.parameters(), GRAD_CLIP_THRESHOLD)
         self.critic_optimizer.step()
 
         # ---------------------------- update actor ---------------------------- #
