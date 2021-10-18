@@ -32,9 +32,7 @@ class Agent():
             random_seed (int): random seed
         """
         self.state_size = state_size
-        print("Agents state size: {}".format(state_size))
         self.action_size = action_size
-        print("Agents action size: {}".format(action_size))
         self.seed = random.seed(random_seed)
 
         # Actor Network (w/ Target Network)
@@ -53,26 +51,31 @@ class Agent():
         # Replay memory
         self.memory = ReplayBuffer(action_size, BUFFER_SIZE, BATCH_SIZE, random_seed)
     
-    def step(self, state, action, reward, next_state, done):
+    def step(self, states, actions, rewards, next_states, dones):
         """Save experience in replay memory, and use random sample from buffer to learn."""
-        # Save experience / reward
-        self.memory.add(state, action, reward, next_state, done)
+
+        for i in range(len(states)):
+            # Save experience / reward
+            self.memory.add(states[i], actions[i], rewards[i], next_states[i], dones[i])
 
         # Learn, if enough samples are available in memory
         if len(self.memory) > BATCH_SIZE:
             experiences = self.memory.sample()
             self.learn(experiences, GAMMA)
 
-    def act(self, state, add_noise=True):
+    def act(self, states, add_noise=True):
         """Returns actions for given state as per current policy."""
-        state = torch.from_numpy(state).float().to(device)
-        self.actor_local.eval()
-        with torch.no_grad():
-            action = self.actor_local(state).cpu().data.numpy()
-        self.actor_local.train()
-        if add_noise:
-            action += self.noise.sample()
-        return np.clip(action, -1, 1)
+        actions = []
+        for s in states:
+            state = torch.from_numpy(s).float().to(device)
+            self.actor_local.eval()
+            with torch.no_grad():
+                action = self.actor_local(state).cpu().data.numpy()
+            self.actor_local.train()
+            if add_noise:
+                action += self.noise.sample()
+            actions.append(action)
+        return np.clip(actions, -1, 1)
 
     def reset(self):
         self.noise.reset()
