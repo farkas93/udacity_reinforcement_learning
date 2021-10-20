@@ -2,6 +2,7 @@ from unityagents import UnityEnvironment
 import numpy as np
 import matplotlib.pyplot as plt
 from agents.ddpg_agent import DDPGAgentCollective
+import csv
 import sys
 import pandas as pd
 
@@ -10,21 +11,35 @@ import torch
 TARGET_SCORE = 30
 USE_COLLECTIVE_TRAINING = True
 
-def plot_scores(scores, rolling_window=100):
+def plot_scores(scores, episode_solved, rolling_window=100):
     """Plot scores and optional rolling mean using specified window."""
     plt.title("Scores")
-    rolling_mean = pd.Series(scores).rolling(rolling_window).mean()    
+    means  = []
+    for s in scores:
+        means.append(np.mean(s))
+    rolling_mean = pd.Series(means).rolling(rolling_window).mean()       
     # plot the scores
     fig = plt.figure()
-    ax = fig.add_subplot(111)
-    plt.plot(np.arange(len(scores)), scores)
-    plt.plot(rolling_mean)
+    plt.plot(np.arange(len(means)), means, label="AVG-Score over all agents / episode")
+    plt.plot(rolling_mean, label="AVG-Score over previous 100 episodes")
     plt.ylabel('Score')
     plt.xlabel('Episode #')
-    plt.axhline(y = rolling_mean, color = 'r', linestyle = '-', label="my avg score")
-    plt.axhline(y = TARGET_SCORE, color = 'g', linestyle = 'dashed', label="target score")    
-    plt.legend(bbox_to_anchor = (1.0, 1), loc = 'upper center')
+    plt.axhline(y = rolling_mean[len(rolling_mean)-1], color = 'r', linestyle = '-', label="AVG-Score last Epoch")
+    plt.axhline(y = TARGET_SCORE, color = 'g', linestyle = 'dashed', label="Target Score")   
+    
+    plt.axvline(x = episode_solved, color = 'b', linestyle = '-', label="Episode Environment Solved")    
+    plt.legend(bbox_to_anchor = (0.12, 1.01), loc = 'upper center')
     plt.show()
+    pass
+
+
+def write_to_csv(scores, episode_solved, model_name):
+
+    with open("log_"+model_name+".csv", "w", newline="") as f:
+        writer = csv.writer(f)
+        writer.writerow("Episode Solving the Problem;{}".format(episode_solved))
+        writer.writerow("Scores")
+        writer.writerows(scores)
     pass
 
 def main():    
@@ -66,12 +81,13 @@ def main():
     agent_collective = DDPGAgentCollective(device, num_agents, state_size=state_size, action_size=action_size, random_seed=47)
 
     # Train the DQN agent
-    scores = agent_collective.train(env, brain_name, TARGET_SCORE)
+    scores, episode_solved = agent_collective.train(env, brain_name, TARGET_SCORE)
 
     #Save the trained model
     agent_collective.save_current_model('./saved_models/', model_name)
-
-    plot_scores(scores)
+    
+    write_to_csv(scores, episode_solved, model_name)
+    plot_scores(scores, episode_solved)
 
 
 if __name__ == "__main__":

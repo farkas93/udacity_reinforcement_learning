@@ -1,6 +1,7 @@
 import numpy as np
 import random
 from collections import deque
+import time
 
 from models.linear_model import Actor, Critic
 
@@ -17,9 +18,10 @@ TAU = 1e-3              # for soft update of target parameters
 LR_ACTOR = 1e-3        # learning rate of the actor 
 LR_CRITIC = 1e-3        # learning rate of the critic
 WEIGHT_DECAY = 0        # L2 weight decay
-LEARN_AFTER_TS = 20 #lear after a given amount of time steps
+LEARN_AFTER_TS = 10 #learn after a given amount of time steps
+NR_UPDATES = 10
 
-EPOCHS = 1
+EPOCHS = 10
 EPISODES_PER_EPOCH = 100
 TIMESTEPS_PER_EPISODE = 1000
 TOTAL_EPISODES = EPOCHS * EPISODES_PER_EPOCH
@@ -66,13 +68,13 @@ class DDPGAgentCollective():
     def step(self, states, actions, rewards, next_states, dones, timestep):
         """Save experience in replay memory, and use random sample from buffer to learn."""
 
-        #for i in range(len(states)):
         # Save experience / reward
-        self.memory.add(states, actions, rewards, next_states, dones)
+        for i in range(len(states)):    
+            self.memory.add(states[i], actions[i], rewards[i], next_states[i], dones[i])
 
         # Learn, if enough samples are available in memory
         if len(self.memory) > BATCH_SIZE and timestep % LEARN_AFTER_TS == 0:            
-            for _ in range(LEARN_AFTER_TS):
+            for _ in range(NR_UPDATES):
                 experiences = self.memory.sample()
                 self.learn(experiences, GAMMA)
 
@@ -150,7 +152,7 @@ class DDPGAgentCollective():
         for target_param, local_param in zip(target_model.parameters(), local_model.parameters()):
             target_param.data.copy_(tau*local_param.data + (1.0-tau)*target_param.data)
 
-    def save_current_model(self, model_name, path):
+    def save_current_model(self, path, model_name):
         """Save the models of the actor and the critic network which belong to the
            training model called model_name to the path.
         
@@ -176,41 +178,50 @@ class DDPGAgentCollective():
         """
         scores_deque = deque(maxlen=EPISODES_PER_EPOCH)
         all_scores = []
+        solved = False
 
         for i_episode in range(1, TOTAL_EPISODES+1):
             env_info = env.reset(train_mode=True)[brain_name]     # reset the environment    
             states = env_info.vector_observations                  # get the current state (for each agent)
             self.reset()        
             scores = np.zeros(self.num_agents)                          # initialize the score (for each agent)
+            
+            start_time = time.time()
             for t in range(TIMESTEPS_PER_EPISODE):
+
                 actions = self.act(states)
+
                 env_info = env.step(actions)[brain_name]           # send all actions to tne environment
                 next_states = env_info.vector_observations         # get next state (for each agent)
                 rewards = env_info.rewards                         # get reward (for each agent)
                 dones = env_info.local_done                        # see if episode finished
-
-                for i in range(len(states)):
-                    self.step(states[i], actions[i], rewards[i], next_states[i], dones[i], t)
+                                
+                self.step(states, actions, rewards, next_states, dones, t)
 
                 states = next_states
                 scores += rewards
                 if np.any(dones):
                     break 
-
+            
+            duration_episode = time.time() - start_time
             #Store the scores
             scores_deque.append(scores)
             all_scores.append(scores)
 
             #Print for overview and check if environment solved
             score_over_last_epoch = np.mean(scores_deque)
-            print('\rEpisode {}\tAverage Score: {:.2f}'.format(i_episode, score_over_last_epoch), end="")
+            
+            if score_over_last_epoch >= target_score and not solved:
+                episode_env_solved = i_episode
+                solved = True
+            print('\rEpisode {}\tAverage Score: {:.2f} \tEpisode duration {}s \tEstimated time left: {}s'.format(i_episode, score_over_last_epoch, round(duration_episode), round((TOTAL_EPISODES-i_episode)*duration_episode)), end="")
             if i_episode % EPISODES_PER_EPOCH == 0:
                 torch.save(self.actor_local.state_dict(), 'checkpoint_actor.pth')
                 torch.save(self.critic_local.state_dict(), 'checkpoint_critic.pth')
                 print('\rEpisode {}\tAverage Score: {:.2f}'.format(i_episode, score_over_last_epoch))
-                if score_over_last_epoch >= target_score:
-                    print("Environment Solved after {} Episodes!".format(i_episode))
+                if solved:
+                    print("Environment Solved after {} Epochs and {} Episodes!".format(i_episode/EPISODES_PER_EPOCH, episode_env_solved))
                     break
                 
-        return all_scores
+        return all_scores, episode_env_solved
 
