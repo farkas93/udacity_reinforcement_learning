@@ -24,7 +24,7 @@ def plot_scores(scores, episode_solved, rolling_window=100):
     plt.axhline(y = rolling_mean[len(rolling_mean)-1], color = 'r', linestyle = '-', label="AVG-Score last Epoch")
     plt.axhline(y = TARGET_SCORE, color = 'g', linestyle = 'dashed', label="Target Score")   
     
-    plt.axvline(x = episode_solved, color = 'b', linestyle = '-', label="Episode Environment Solved")    
+    plt.axvline(x = episode_solved, color = 'b', linestyle = '-', label="Episode "+episode_solved+" Solved the Environment")    
     plt.legend(bbox_to_anchor = (0.12, 1.01), loc = 'upper center')
     plt.show()
     pass
