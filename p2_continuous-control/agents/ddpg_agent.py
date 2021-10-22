@@ -15,11 +15,11 @@ BUFFER_SIZE = int(1e6)  # replay buffer size
 BATCH_SIZE = 128        # minibatch size
 GAMMA = 0.99            # discount factor
 TAU = 1e-3              # for soft update of target parameters
-LR_ACTOR = 1e-3        # learning rate of the actor 
+LR_ACTOR = 1e-3         # learning rate of the actor 
 LR_CRITIC = 1e-3        # learning rate of the critic
 WEIGHT_DECAY = 0        # L2 weight decay
-LEARN_AFTER_TS = 10 #learn after a given amount of time steps
-NR_UPDATES = 10
+LEARN_AFTER_TS = 10     # learn after a given amount of time steps
+NR_UPDATES = 10         # sample experience and learn from it this many times
 
 EPOCHS = 10
 EPISODES_PER_EPOCH = 100
@@ -27,7 +27,7 @@ TIMESTEPS_PER_EPISODE = 1000
 TOTAL_EPISODES = EPOCHS * EPISODES_PER_EPOCH
 
 
-GRAD_CLIP_THRESHOLD = 1.0 #TODO: why gradient clipping on value 1?
+GRAD_CLIP_THRESHOLD = 1.0
 
 
 class DDPGAgentCollective():
@@ -86,7 +86,7 @@ class DDPGAgentCollective():
             action = self.actor_local(state).cpu().data.numpy()
         self.actor_local.train()
         if add_noise:
-            action += self.epsilon * self.noise.sample() #TODO: why epsilon decay on the noise?
+            action += self.epsilon * self.noise.sample()
         return np.clip(action, -1, 1)
 
     def reset(self):
