@@ -179,6 +179,7 @@ class DDPGAgentCollective():
         scores_deque = deque(maxlen=EPISODES_PER_EPOCH)
         all_scores = []
         solved = False
+        episode_env_solved = -1
 
         for i_episode in range(1, TOTAL_EPISODES+1):
             env_info = env.reset(train_mode=True)[brain_name]     # reset the environment    
