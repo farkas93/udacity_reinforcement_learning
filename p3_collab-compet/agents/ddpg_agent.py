@@ -267,9 +267,9 @@ class MADDPGCollective():
                 for agent_ind in range(self.num_agents):
                     self.save_current_model('','checkpoint', agent_ind)
                 print(('\rEpisode {}\tAverage Score: '+FLOAT_PRINT_FORMAT).format(i_episode, score_over_last_epoch))
-            if solved and total_score > 1.5:
-                print("Environment Solved after {} Epochs and {} Episodes! Epsilon noise was: {}".format(i_episode/EPISODES_PER_EPOCH, episode_env_solved, self.epsilon_noise))
-                break
+                if solved:
+                    print("Environment Solved after {} Epochs and {} Episodes! Epsilon noise was: {}".format(i_episode/EPISODES_PER_EPOCH, episode_env_solved, self.epsilon_noise))
+                    #break
                 
         return all_scores, episode_env_solved
 
