@@ -70,4 +70,4 @@ A copy of the solution model can also be found in the project folder under the n
 Alternatively you can also follow the instructions in `Continuous_Control.ipynb` to work yourself through in jupyter notebook with the training. However, it is recommended to use the previously mentioned python scripts since the notebook might be incomplete and the training of the solution network was not performed with the jupyter notebook.
 
 The plot of the solution model looks as follows:
-![Training Plot](./training_plot_solution.png)
+![Training Plot](./training_plot_ddpg_w_logs.png)
